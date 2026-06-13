@@ -14,34 +14,92 @@ namespace JsonSmith.Services
             _httpClient = httpClient;
             _settings = settings.Value;
 
-            _httpClient.BaseAddress = new Uri(_settings.BASE_URL);
-            _httpClient.DefaultRequestHeaders.Add("X-API-Key", _settings.API_KEY);
+            if (!string.IsNullOrWhiteSpace(_settings.BASE_URL))
+            {
+                var baseUrl = _settings.BASE_URL.Trim();
+                if (!baseUrl.EndsWith('/'))
+                    baseUrl += "/";
+                _httpClient.BaseAddress = new Uri(baseUrl);
+            }
+
+            if (!string.IsNullOrWhiteSpace(_settings.API_KEY))
+                _httpClient.DefaultRequestHeaders.Add("X-API-Key", _settings.API_KEY);
+
             _httpClient.DefaultRequestHeaders.Add("accept", "application/json");
         }
 
         public async Task<string> ExtractJsonAsync(string imageUrl)
         {
+            if (string.IsNullOrWhiteSpace(_settings.BASE_URL))
+                throw new InvalidOperationException(
+                    "JsonSmithAI:BASE_URL is not configured. Set it to http://127.0.0.1:8000/api/v1/ (trailing slash recommended).");
+
+            if (string.IsNullOrWhiteSpace(_settings.API_KEY))
+                throw new InvalidOperationException(
+                    "JsonSmithAI:API_KEY is not configured. It must match API_KEY in JsonSmithAI .env (header X-API-Key).");
+
             var formData = new MultipartFormDataContent();
             formData.Add(new StringContent(imageUrl), "image_url");
 
-            var response = await _httpClient.PostAsync("extract-json", formData);
-
-            if (!response.IsSuccessStatusCode)
+            HttpResponseMessage response;
+            try
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                throw new HttpRequestException($"AI Service Error: {response.StatusCode} - {errorContent}");
+                response = await _httpClient.PostAsync("extract-json", formData);
+            }
+            catch (HttpRequestException ex) when (ex.InnerException is System.Net.Sockets.SocketException)
+            {
+                throw new HttpRequestException(
+                    "Cannot reach JsonSmithAI. Start the FastAPI service: uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
+                    ex);
             }
 
             var responseContent = await response.Content.ReadAsStringAsync();
-            
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var message = TryReadApiMessage(responseContent)
+                    ?? $"AI Service Error: {response.StatusCode} - {responseContent}";
+                throw new HttpRequestException(message);
+            }
+
+            return ExtractDataPayload(responseContent);
+        }
+
+        private static string? TryReadApiMessage(string responseContent)
+        {
             try
             {
                 using var doc = JsonDocument.Parse(responseContent);
-                if (doc.RootElement.TryGetProperty("Data", out var dataElement) &&
+                if (doc.RootElement.TryGetProperty("Message", out var messageElement))
+                    return messageElement.GetString();
+            }
+            catch (JsonException)
+            {
+            }
+
+            return null;
+        }
+
+        private static string ExtractDataPayload(string responseContent)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(responseContent);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("Success", out var successElement) &&
+                    successElement.ValueKind == JsonValueKind.False)
+                {
+                    var message = root.TryGetProperty("Message", out var msg)
+                        ? msg.GetString() ?? "JsonSmithAI returned Success=false."
+                        : "JsonSmithAI returned Success=false.";
+                    throw new HttpRequestException(message);
+                }
+
+                if (root.TryGetProperty("Data", out var dataElement) &&
                     dataElement.ValueKind != JsonValueKind.Undefined &&
                     dataElement.ValueKind != JsonValueKind.Null)
                 {
-                    // API returns structured JSON in Data (object/array/primitive), not an escaped JSON string.
                     if (dataElement.ValueKind == JsonValueKind.String)
                     {
                         var s = dataElement.GetString();
@@ -51,11 +109,11 @@ namespace JsonSmith.Services
                     else
                         return dataElement.GetRawText();
                 }
+
                 return responseContent;
             }
             catch (JsonException)
             {
-                // Fallback to returning raw content if parsing fails
                 return responseContent;
             }
         }
