@@ -1,5 +1,4 @@
-﻿document.addEventListener("DOMContentLoaded", () => {
-
+﻿document.addEventListener('DOMContentLoaded', () => {
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
     const previewImage = document.getElementById('previewImage');
@@ -7,11 +6,19 @@
     const statusText = document.getElementById('statusText');
     const jsonOutput = document.getElementById('jsonOutput');
 
-    if (!dropZone) return; // safety guard
+    if (!dropZone) return;
+
+    let currentFile = null;
 
     dropZone.addEventListener('click', () => fileInput.click());
 
-    dropZone.addEventListener('dragover', e => {
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
         dropZone.classList.add('border-indigo-500');
     });
@@ -20,45 +27,72 @@
         dropZone.classList.remove('border-indigo-500');
     });
 
-    dropZone.addEventListener('drop', e => {
+    dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         dropZone.classList.remove('border-indigo-500');
-        handleFile(e.dataTransfer.files[0]);
-    });
-
-    fileInput.addEventListener('change', e => {
-        handleFile(e.target.files[0]);
+        if (e.dataTransfer.files.length) {
+            handleFile(e.dataTransfer.files[0]);
+        }
     });
 
     function handleFile(file) {
         if (!file) return;
 
-        previewImage.src = URL.createObjectURL(file);
-        previewImage.classList.remove('hidden');
-
-        statusText.textContent = 'Image ready';
+        currentFile = file;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            previewImage.src = event.target.result;
+            previewImage.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+        statusText.textContent = `Selected: ${file.name}`;
         convertBtn.disabled = false;
     }
 
-    convertBtn.addEventListener('click', () => {
-        statusText.textContent = 'Processing...';
+    async function readErrorMessage(response) {
+        try {
+            const data = await response.json();
+            return data.message ?? data.error ?? data.title ?? null;
+        } catch {
+            return null;
+        }
+    }
+
+    convertBtn.addEventListener('click', async () => {
+        if (!currentFile) {
+            showToast('Please select an image first.', 'warning');
+            return;
+        }
+
+        statusText.textContent = 'Uploading...';
         convertBtn.disabled = true;
 
-        jsonOutput.textContent = JSON.stringify({
-            status: "processing",
-            message: "AI model is generating JSON..."
-        }, null, 2);
+        const formData = new FormData();
+        formData.append('file', currentFile);
 
-        // Mock AI delay
-        setTimeout(() => {
-            jsonOutput.textContent = JSON.stringify({
-                status: "success",
-                detectedObjects: [],
-                confidence: "N/A"
-            }, null, 2);
+        try {
+            const response = await fetch('/Home/UploadImage', {
+                method: 'POST',
+                body: formData
+            });
 
-            statusText.textContent = 'Done';
-        }, 2000);
+            if (!response.ok) {
+                const serverMessage = await readErrorMessage(response);
+                throw new Error(serverMessage ?? `Upload failed (${response.status})`);
+            }
+
+            const result = await response.json();
+            jsonOutput.textContent = JSON.stringify(result, null, 2);
+            statusText.textContent = 'Upload successful!';
+            showToast('Image converted to JSON successfully.', 'success');
+        } catch (error) {
+            console.error(error);
+            const message = error.message || 'Error during upload.';
+            statusText.textContent = 'Error during upload.';
+            jsonOutput.textContent = JSON.stringify({ error: message }, null, 2);
+            showToast(message, 'error', 6000);
+        } finally {
+            convertBtn.disabled = false;
+        }
     });
-
 });
