@@ -36,6 +36,14 @@ using Microsoft.AspNetCore.Mvc;
             return View();
         }
 
+        [HttpGet]
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public async Task<IActionResult> JsonSmithAIHealth()
+        {
+            var result = await _aiService.CheckHealthAsync();
+            return Ok(result);
+        }
+
         [HttpPost]
         public async Task<IActionResult> UploadImage(IFormFile file)
         {

@@ -65,6 +65,78 @@ namespace JsonSmith.Services
             return ExtractDataPayload(responseContent);
         }
 
+        public async Task<JsonSmithAIHealthResult> CheckHealthAsync()
+        {
+            if (string.IsNullOrWhiteSpace(_settings.BASE_URL))
+            {
+                return new JsonSmithAIHealthResult
+                {
+                    IsOnline = false,
+                    Message = "JsonSmithAI is not configured. Set JsonSmithAI__BASE_URL in environment variables."
+                };
+            }
+
+            var healthUri = GetHealthCheckUri();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, healthUri);
+                var response = await _httpClient.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    cts.Token);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return new JsonSmithAIHealthResult
+                    {
+                        IsOnline = true,
+                        Message = "JsonSmithAI is online and ready."
+                    };
+                }
+
+                return new JsonSmithAIHealthResult
+                {
+                    IsOnline = false,
+                    Message = $"JsonSmithAI responded with status {(int)response.StatusCode}."
+                };
+            }
+            catch (OperationCanceledException)
+            {
+                return new JsonSmithAIHealthResult
+                {
+                    IsOnline = false,
+                    Message = "JsonSmithAI health check timed out."
+                };
+            }
+            catch (HttpRequestException)
+            {
+                return new JsonSmithAIHealthResult
+                {
+                    IsOnline = false,
+                    Message = "JsonSmithAI is offline. Start the FastAPI service on port 8000."
+                };
+            }
+            catch (Exception)
+            {
+                return new JsonSmithAIHealthResult
+                {
+                    IsOnline = false,
+                    Message = "JsonSmithAI is unreachable."
+                };
+            }
+        }
+
+        private Uri GetHealthCheckUri()
+        {
+            var baseUrl = _settings.BASE_URL.Trim();
+            if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var apiUri))
+                throw new InvalidOperationException("JsonSmithAI BASE_URL is not a valid absolute URI.");
+
+            return new UriBuilder(apiUri.Scheme, apiUri.Host, apiUri.Port).Uri;
+        }
+
         private static string? TryReadApiMessage(string responseContent)
         {
             try
