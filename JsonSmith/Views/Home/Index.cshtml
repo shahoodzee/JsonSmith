@@ -64,17 +64,26 @@
             </div>
         </a>
 
-        <div class="rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 p-6 opacity-60">
+        <a asp-controller="Home" asp-action="JsonBuilder"
+           class="group rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 p-6
+                  hover:border-indigo-500 hover:shadow-md transition-all">
             <div class="flex items-start gap-4">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-700 text-2xl">
-                    🔜
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-2xl">
+                    🧱
                 </div>
                 <div>
-                    <h2 class="font-semibold text-slate-900 dark:text-slate-100">Feature 3</h2>
-                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Coming soon.</p>
+                    <h2 class="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                        JSON Builder
+                    </h2>
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                        Build JSON with objects, columns, and AI-powered unique samples.
+                    </p>
+                    <span class="inline-block mt-3 text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                        Open feature →
+                    </span>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <p class="text-center text-xs text-slate-500 dark:text-slate-500">

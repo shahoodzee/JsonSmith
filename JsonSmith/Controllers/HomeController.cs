@@ -75,9 +75,38 @@ using Microsoft.AspNetCore.Mvc;
             }
         }
 
-        public IActionResult Feature3()
+        public IActionResult JsonBuilder()
         {
-            ViewData["Title"] = "Feature 3";
+            ViewData["Title"] = "JSON Builder";
             return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GenerateSamples([FromBody] GenerateSamplesRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Key))
+                return BadRequest(new { message = "key is required." });
+
+            var type = (request.Type ?? "string").Trim().ToLowerInvariant();
+            if (type is not ("string" or "int"))
+                return BadRequest(new { message = "type must be 'string' or 'int'." });
+
+            if (request.Frequency < 1 || request.Frequency > 50)
+                return BadRequest(new { message = "frequency must be between 1 and 50." });
+
+            try
+            {
+                var values = await _aiService.GenerateSamplesAsync(
+                    request.Key.Trim(),
+                    type,
+                    request.Seed,
+                    request.Frequency);
+
+                return Ok(new { values });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
 }

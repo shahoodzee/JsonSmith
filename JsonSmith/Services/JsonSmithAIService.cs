@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Options;
 using JsonSmith.Models;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace JsonSmith.Services
 {
@@ -63,6 +65,72 @@ namespace JsonSmith.Services
             }
 
             return ExtractDataPayload(responseContent);
+        }
+
+        public async Task<JsonElement[]> GenerateSamplesAsync(string key, string type, JsonElement seed, int frequency)
+        {
+            if (string.IsNullOrWhiteSpace(_settings.BASE_URL))
+                throw new InvalidOperationException(
+                    "JsonSmithAI:BASE_URL is not configured. Set it to http://127.0.0.1:8000/api/v1/ (trailing slash recommended).");
+
+            if (string.IsNullOrWhiteSpace(_settings.API_KEY))
+                throw new InvalidOperationException(
+                    "JsonSmithAI:API_KEY is not configured. It must match API_KEY in JsonSmithAI .env (header X-API-Key).");
+
+            var payload = new JsonObject
+            {
+                ["key"] = key,
+                ["type"] = type,
+                ["frequency"] = frequency,
+                ["seed"] = seed.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null
+                    ? ""
+                    : JsonNode.Parse(seed.GetRawText())
+            };
+
+            using var content = new StringContent(
+                payload.ToJsonString(),
+                Encoding.UTF8,
+                "application/json");
+
+            HttpResponseMessage response;
+            try
+            {
+                response = await _httpClient.PostAsync("generate-samples", content);
+            }
+            catch (HttpRequestException ex) when (ex.InnerException is System.Net.Sockets.SocketException)
+            {
+                throw new HttpRequestException(
+                    "Cannot reach JsonSmithAI. Start the FastAPI service: uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
+                    ex);
+            }
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var message = TryReadDetailMessage(responseContent)
+                    ?? TryReadApiMessage(responseContent)
+                    ?? $"AI Service Error: {response.StatusCode} - {responseContent}";
+                throw new HttpRequestException(message);
+            }
+
+            try
+            {
+                using var doc = JsonDocument.Parse(responseContent);
+                if (!doc.RootElement.TryGetProperty("values", out var valuesElement) ||
+                    valuesElement.ValueKind != JsonValueKind.Array)
+                {
+                    throw new HttpRequestException("JsonSmithAI did not return a values array.");
+                }
+
+                return valuesElement.EnumerateArray()
+                    .Select(v => v.Clone())
+                    .ToArray();
+            }
+            catch (JsonException ex)
+            {
+                throw new HttpRequestException("Failed to parse generate-samples response.", ex);
+            }
         }
 
         public async Task<JsonSmithAIHealthResult> CheckHealthAsync()
@@ -144,6 +212,25 @@ namespace JsonSmith.Services
                 using var doc = JsonDocument.Parse(responseContent);
                 if (doc.RootElement.TryGetProperty("Message", out var messageElement))
                     return messageElement.GetString();
+            }
+            catch (JsonException)
+            {
+            }
+
+            return null;
+        }
+
+        private static string? TryReadDetailMessage(string responseContent)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(responseContent);
+                if (doc.RootElement.TryGetProperty("detail", out var detailElement))
+                {
+                    if (detailElement.ValueKind == JsonValueKind.String)
+                        return detailElement.GetString();
+                    return detailElement.GetRawText();
+                }
             }
             catch (JsonException)
             {

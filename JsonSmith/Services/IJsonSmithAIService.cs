@@ -1,3 +1,4 @@
+using System.Text.Json;
 using JsonSmith.Models;
 
 namespace JsonSmith.Services
@@ -6,5 +7,6 @@ namespace JsonSmith.Services
     {
         Task<string> ExtractJsonAsync(string imageUrl);
         Task<JsonSmithAIHealthResult> CheckHealthAsync();
+        Task<JsonElement[]> GenerateSamplesAsync(string key, string type, JsonElement seed, int frequency);
     }
 }
