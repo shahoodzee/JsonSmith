@@ -79,6 +79,12 @@
         if (aiOnline) fileInput.click();
     });
 
+    // Prevent the programmatic fileInput.click() from bubbling back up to
+    // dropZone and triggering a second file-picker open (closes #2).
+    fileInput.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length) {
             handleFile(e.target.files[0]);
