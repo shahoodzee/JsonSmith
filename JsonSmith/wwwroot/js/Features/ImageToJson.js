@@ -207,7 +207,7 @@
             setJsonOutput(JSON.stringify({ error: message }, null, 2), true);
             showToast(message, 'error', 6000);
         } finally {
-            if (aiOnline) convertBtn.disabled = false;
+            convertBtn.disabled = !aiOnline || !currentFile;
         }
     });
 });
