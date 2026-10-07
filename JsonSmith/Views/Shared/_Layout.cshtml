@@ -15,7 +15,35 @@
         if (localStorage.theme === 'dark') {
             document.documentElement.classList.add('dark');
         }
+
+        // Restore sidebar state on load (prevent flash)
+        if (localStorage.sidebarCollapsed === 'true') {
+            document.documentElement.classList.add('sidebar-collapsed');
+        }
     </script>
+
+    <style>
+        .sidebar-collapsed #sidebar {
+            width: 4rem;
+        }
+        .sidebar-collapsed .sidebar-label {
+            display: none;
+        }
+        .sidebar-collapsed #sidebar nav a {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        .sidebar-collapsed #sidebar-collapse-icon {
+            display: none;
+        }
+        .sidebar-collapsed #sidebar-expand-icon {
+            display: block;
+        }
+        .sidebar-collapsed #sidebar > div:first-child {
+            justify-content: center;
+        }
+    </style>
 </head>
 
 <body class="h-full bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
@@ -52,6 +80,12 @@
     @await Html.PartialAsync("_AiStatusWidget")
 
     <script>
+        function toggleSidebar() {
+            const root = document.documentElement;
+            const collapsed = root.classList.toggle('sidebar-collapsed');
+            try { localStorage.sidebarCollapsed = collapsed; } catch(e) {}
+        }
+
         function toggleTheme() {
             const root = document.documentElement;
             if (root.classList.contains('dark')) {
