@@ -72,6 +72,20 @@
             <span class="sidebar-label whitespace-nowrap">JSON Builder</span>
         </a>
 
+        <a asp-controller="Home" asp-action="History"
+           title="History"
+           class="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors"
+           style="@(action == "History"
+                    ? "background:var(--accent-bg);color:var(--accent-h);border-left:2px solid var(--accent);font-weight:500"
+                    : "color:var(--txt-2)")">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="sidebar-label whitespace-nowrap">History</span>
+        </a>
+
         <!-- Divider -->
         <div class="my-2" style="border-top:1px solid var(--border)"></div>
 

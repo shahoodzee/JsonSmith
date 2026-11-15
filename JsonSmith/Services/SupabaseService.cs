@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using JsonSmith.Models;
 using Supabase;
+using Supabase.Postgrest.Constants;
 
 namespace JsonSmith.Services
 {
@@ -47,6 +48,29 @@ namespace JsonSmith.Services
                 .CreateSignedUrl(fileName, 3600);
 
             return signedUrl;
+        }
+
+        public async Task SaveExtractionAsync(string imageFilename, string? signedUrl, string extractedJson)
+        {
+            await _supabase.InitializeAsync();
+            var record = new ExtractionHistory
+            {
+                ImageFilename = imageFilename,
+                SignedUrl = signedUrl,
+                ExtractedJson = extractedJson
+            };
+            await _supabase.From<ExtractionHistory>().Insert(record);
+        }
+
+        public async Task<IEnumerable<ExtractionHistory>> GetHistoryAsync(int limit = 50)
+        {
+            await _supabase.InitializeAsync();
+            var response = await _supabase.From<ExtractionHistory>()
+                .Select("*")
+                .Order("created_at", Ordering.Descending)
+                .Limit(limit)
+                .Get();
+            return response.Models;
         }
     }
 }

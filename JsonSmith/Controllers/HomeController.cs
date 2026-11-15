@@ -56,9 +56,12 @@ using Microsoft.AspNetCore.Mvc;
             {
                 var url = await _supabaseService.UploadFileAsync(file, "Images");
                 var jsonResult = await _aiService.ExtractJsonAsync(url);
-                
+
+                // Save to history (best-effort — don't fail the request if DB write fails)
+                try { await _supabaseService.SaveExtractionAsync(file.FileName, url, jsonResult); } catch { }
+
                 // Try to parse the result as JSON to return a clean object
-                try 
+                try
                 {
                     var parsedJson = System.Text.Json.Nodes.JsonNode.Parse(jsonResult);
                     return Ok(parsedJson);
@@ -75,10 +78,81 @@ using Microsoft.AspNetCore.Mvc;
             }
         }
 
+        [HttpPost]
+        public IActionResult ExportJson([FromBody] JsonSmith.Models.ExportJsonRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.Json))
+                return BadRequest(new { message = "json is required." });
+
+            if (request.Format is not ("csv" or "xlsx"))
+                return BadRequest(new { message = "format must be 'csv' or 'xlsx'." });
+
+            List<Dictionary<string, string>> rows;
+            try
+            {
+                rows = JsonSmith.Utilities.JsonFlattener.Flatten(request.Json).ToList();
+            }
+            catch
+            {
+                return BadRequest(new { message = "Invalid JSON." });
+            }
+
+            if (rows.Count == 0)
+                return BadRequest(new { message = "No data to export." });
+
+            var headers = rows.SelectMany(r => r.Keys).Distinct().ToList();
+            var stamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+
+            if (request.Format == "csv")
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine(string.Join(",", headers.Select(h => $"\"{h.Replace("\"", "\"\"")}\"")));
+                foreach (var row in rows)
+                    sb.AppendLine(string.Join(",", headers.Select(h =>
+                    {
+                        var v = row.TryGetValue(h, out var val) ? val : "";
+                        return $"\"{v.Replace("\"", "\"\"")}\"";
+                    })));
+                return File(System.Text.Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"export_{stamp}.csv");
+            }
+            else
+            {
+                using var wb = new ClosedXML.Excel.XLWorkbook();
+                var ws = wb.Worksheets.Add("Export");
+                for (int c = 0; c < headers.Count; c++)
+                    ws.Cell(1, c + 1).Value = headers[c];
+                for (int r = 0; r < rows.Count; r++)
+                    for (int c = 0; c < headers.Count; c++)
+                    {
+                        var v = rows[r].TryGetValue(headers[c], out var val) ? val : "";
+                        ws.Cell(r + 2, c + 1).Value = v;
+                    }
+                using var ms = new MemoryStream();
+                wb.SaveAs(ms);
+                return File(ms.ToArray(),
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"export_{stamp}.xlsx");
+            }
+        }
+
         public IActionResult JsonBuilder()
         {
             ViewData["Title"] = "JSON Builder";
             return View();
+        }
+
+        public async Task<IActionResult> History()
+        {
+            ViewData["Title"] = "History";
+            try
+            {
+                var history = await _supabaseService.GetHistoryAsync();
+                return View(history);
+            }
+            catch
+            {
+                return View(Enumerable.Empty<JsonSmith.Models.ExtractionHistory>());
+            }
         }
 
         [HttpPost]
