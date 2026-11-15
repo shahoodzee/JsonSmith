@@ -45,20 +45,24 @@ using Microsoft.AspNetCore.Mvc;
         }
 
         [HttpPost]
-        public async Task<IActionResult> UploadImage(IFormFile file)
+        public async Task<IActionResult> UploadImage(IFormFile file, [FromForm] string? callbackUrl = null)
         {
             if (file == null || file.Length == 0)
             {
                 return BadRequest(new { message = "No file uploaded." });
             }
 
+            if (!string.IsNullOrWhiteSpace(callbackUrl) && !callbackUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "callbackUrl must use HTTPS." });
+
             try
             {
                 var url = await _supabaseService.UploadFileAsync(file, "Images");
-                var jsonResult = await _aiService.ExtractJsonAsync(url);
+                var jsonResult = await _aiService.ExtractJsonAsync(url, string.IsNullOrWhiteSpace(callbackUrl) ? null : callbackUrl);
 
                 // Save to history (best-effort — don't fail the request if DB write fails)
                 try { await _supabaseService.SaveExtractionAsync(file.FileName, url, jsonResult); } catch { }
+
 
                 // Try to parse the result as JSON to return a clean object
                 try

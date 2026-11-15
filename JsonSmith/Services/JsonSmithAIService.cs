@@ -30,7 +30,7 @@ namespace JsonSmith.Services
             _httpClient.DefaultRequestHeaders.Add("accept", "application/json");
         }
 
-        public async Task<string> ExtractJsonAsync(string imageUrl)
+        public async Task<string> ExtractJsonAsync(string imageUrl, string? callbackUrl = null)
         {
             if (string.IsNullOrWhiteSpace(_settings.BASE_URL))
                 throw new InvalidOperationException(
@@ -42,6 +42,8 @@ namespace JsonSmith.Services
 
             var formData = new MultipartFormDataContent();
             formData.Add(new StringContent(imageUrl), "image_url");
+            if (!string.IsNullOrWhiteSpace(callbackUrl))
+                formData.Add(new StringContent(callbackUrl), "callback_url");
 
             HttpResponseMessage response;
             try
