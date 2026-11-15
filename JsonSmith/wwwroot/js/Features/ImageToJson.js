@@ -7,6 +7,8 @@
     const jsonOutput = document.getElementById('jsonOutput');
     const copyJsonBtn = document.getElementById('copyJsonBtn');
     const copyJsonBtnLabel = document.getElementById('copyJsonBtnLabel');
+    const prettyToggleBtn = document.getElementById('prettyToggleBtn');
+    const prettyToggleBtnLabel = document.getElementById('prettyToggleBtnLabel');
     const offlineBanner = document.getElementById('aiOfflineBanner');
     const offlineBannerMessage = document.getElementById('aiOfflineBannerMessage');
     const workspace = document.getElementById('imageToJsonWorkspace');
@@ -16,12 +18,33 @@
     let currentFile = null;
     let aiOnline = false;
     let lastCopyTimeout = null;
+    let isPretty = true;
+    let lastResultObj = null;
 
     const IDLE_JSON = '{\n  "status": "idle",\n  "message": "Upload an image to start"\n}';
     const OFFLINE_JSON = '{\n  "status": "unavailable",\n  "message": "JsonSmithAI is offline. Start the FastAPI service and try again."\n}';
 
     function setCopyEnabled(enabled) {
         if (copyJsonBtn) copyJsonBtn.disabled = !enabled;
+    }
+
+    function renderOutput() {
+        if (!lastResultObj) return;
+
+        const isMalformed = lastResultObj.note === 'Result may be malformed JSON';
+        const text = isPretty
+            ? JSON.stringify(lastResultObj, null, 2)
+            : JSON.stringify(lastResultObj);
+
+        jsonOutput.textContent = text;
+
+        if (isMalformed) {
+            jsonOutput.style.borderColor = 'var(--err)';
+            jsonOutput.style.color = 'var(--err)';
+        } else {
+            jsonOutput.style.borderColor = '';
+            jsonOutput.style.color = 'var(--txt-2)';
+        }
     }
 
     function setJsonOutput(text, allowCopy) {
@@ -59,6 +82,8 @@
             statusText.textContent = 'AI service unavailable';
             setJsonOutput(OFFLINE_JSON, false);
             currentFile = null;
+            lastResultObj = null;
+            prettyToggleBtn?.classList.add('hidden');
             fileInput.value = '';
             previewImage.classList.add('hidden');
             previewImage.removeAttribute('src');
@@ -167,6 +192,12 @@
         }
     });
 
+    prettyToggleBtn?.addEventListener('click', () => {
+        isPretty = !isPretty;
+        if (prettyToggleBtnLabel) prettyToggleBtnLabel.textContent = isPretty ? 'Raw' : 'Pretty';
+        renderOutput();
+    });
+
     convertBtn.addEventListener('click', async () => {
         if (!aiOnline) {
             showToast('JsonSmithAI is offline. Image to JSON is unavailable.', 'error', 6000);
@@ -197,13 +228,20 @@
             }
 
             const result = await response.json();
-            setJsonOutput(JSON.stringify(result, null, 2), true);
+            lastResultObj = result;
+            isPretty = true;
+            if (prettyToggleBtnLabel) prettyToggleBtnLabel.textContent = 'Raw';
+            prettyToggleBtn?.classList.remove('hidden');
+            renderOutput();
+            setCopyEnabled(true);
             statusText.textContent = 'Conversion successful!';
             showToast('Image converted to JSON successfully.', 'success');
         } catch (error) {
             console.error(error);
             const message = error.message || 'Error during upload.';
             statusText.textContent = 'Error during conversion.';
+            lastResultObj = null;
+            prettyToggleBtn?.classList.add('hidden');
             setJsonOutput(JSON.stringify({ error: message }, null, 2), true);
             showToast(message, 'error', 6000);
         } finally {
