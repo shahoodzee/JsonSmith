@@ -79,6 +79,41 @@ using Microsoft.AspNetCore.Mvc;
         }
 
         [HttpPost]
+        public async Task<IActionResult> UploadImages(List<IFormFile> files)
+        {
+            if (files == null || files.Count == 0)
+                return BadRequest(new { message = "No files uploaded." });
+
+            if (files.Count > 10)
+                return BadRequest(new { message = "Maximum 10 files per batch." });
+
+            var tasks = files.Select(async file =>
+            {
+                try
+                {
+                    var url = await _supabaseService.UploadFileAsync(file, "Images");
+                    var jsonResult = await _aiService.ExtractJsonAsync(url);
+                    try
+                    {
+                        var parsed = System.Text.Json.Nodes.JsonNode.Parse(jsonResult);
+                        return new { fileName = file.FileName, success = true, data = parsed, error = (string?)null };
+                    }
+                    catch
+                    {
+                        return new { fileName = file.FileName, success = false, data = (System.Text.Json.Nodes.JsonNode?)null, error = "Malformed JSON returned" };
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return new { fileName = file.FileName, success = false, data = (System.Text.Json.Nodes.JsonNode?)null, error = ex.Message };
+                }
+            });
+
+            var results = await Task.WhenAll(tasks);
+            return Ok(results);
+        }
+
+        [HttpPost]
         public IActionResult ExportJson([FromBody] JsonSmith.Models.ExportJsonRequest request)
         {
             if (string.IsNullOrWhiteSpace(request?.Json))
