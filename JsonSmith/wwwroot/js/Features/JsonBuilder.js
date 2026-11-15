@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const createColumnBtn = document.getElementById('createColumnBtn');
     const columnStatus = document.getElementById('columnStatus');
     const resetJsonBtn = document.getElementById('resetJsonBtn');
+    const schemaEditor = document.getElementById('schemaEditor');
+    const schemaEditorError = document.getElementById('schemaEditorError');
 
     let state = {};
     /** @type {string[]} */
@@ -249,6 +251,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (frequency === 1) {
                 values = [seed];
             } else {
+                const schema = schemaEditor?.value?.trim() || null;
+
+                if (schema) {
+                    try { JSON.parse(schema); }
+                    catch {
+                        if (schemaEditorError) {
+                            schemaEditorError.textContent = 'Schema is not valid JSON — fix it or clear the field.';
+                            schemaEditorError.classList.remove('hidden');
+                        }
+                        createColumnBtn.disabled = false;
+                        columnStatus.textContent = '';
+                        return;
+                    }
+                }
+                if (schemaEditorError) schemaEditorError.classList.add('hidden');
+
                 const response = await fetch('/Home/GenerateSamples', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -256,7 +274,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         key,
                         type,
                         seed,
-                        frequency
+                        frequency,
+                        schema
                     })
                 });
 
