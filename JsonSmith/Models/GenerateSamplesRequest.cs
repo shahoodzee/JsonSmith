@@ -15,5 +15,7 @@ namespace JsonSmith.Models
 
         [Range(1, 50)]
         public int Frequency { get; set; } = 1;
+
+        public string? Schema { get; set; }
     }
 }

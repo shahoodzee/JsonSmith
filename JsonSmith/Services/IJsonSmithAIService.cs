@@ -7,6 +7,6 @@ namespace JsonSmith.Services
     {
         Task<string> ExtractJsonAsync(string imageUrl, string? callbackUrl = null);
         Task<JsonSmithAIHealthResult> CheckHealthAsync();
-        Task<JsonElement[]> GenerateSamplesAsync(string key, string type, JsonElement seed, int frequency);
+        Task<JsonElement[]> GenerateSamplesAsync(string key, string type, JsonElement seed, int frequency, string? schema = null);
     }
 }
