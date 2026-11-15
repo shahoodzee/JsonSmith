@@ -8,6 +8,8 @@
     const copyJsonBtn = document.getElementById('copyJsonBtn');
     const copyJsonBtnLabel = document.getElementById('copyJsonBtnLabel');
     const downloadJsonBtn = document.getElementById('downloadJsonBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const exportXlsxBtn = document.getElementById('exportXlsxBtn');
     const offlineBanner = document.getElementById('aiOfflineBanner');
     const offlineBannerMessage = document.getElementById('aiOfflineBannerMessage');
     const workspace = document.getElementById('imageToJsonWorkspace');
@@ -18,6 +20,7 @@
     let aiOnline = false;
     let lastCopyTimeout = null;
     let currentFileName = '';
+    let lastResultJson = null;
 
     const IDLE_JSON = '{\n  "status": "idle",\n  "message": "Upload an image to start"\n}';
     const OFFLINE_JSON = '{\n  "status": "unavailable",\n  "message": "JsonSmithAI is offline. Start the FastAPI service and try again."\n}';
@@ -27,9 +30,42 @@
         if (downloadJsonBtn) downloadJsonBtn.disabled = !enabled;
     }
 
+    function setExportEnabled(enabled) {
+        if (exportCsvBtn) exportCsvBtn.disabled = !enabled;
+        if (exportXlsxBtn) exportXlsxBtn.disabled = !enabled;
+    }
+
     function setJsonOutput(text, allowCopy) {
         jsonOutput.textContent = text;
         setCopyEnabled(allowCopy);
+        setExportEnabled(allowCopy);
+        if (!allowCopy) lastResultJson = null;
+    }
+
+    async function doExport(format) {
+        if (!lastResultJson) return;
+        try {
+            const response = await fetch('/Home/ExportJson', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ json: lastResultJson, format })
+            });
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.message || `Export failed (${response.status})`);
+            }
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `export_${Date.now()}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            showToast(err.message || 'Export failed.', 'error');
+        }
     }
 
     function setFeatureEnabled(enabled, message) {
@@ -154,6 +190,9 @@
         document.body.removeChild(textarea);
     }
 
+    exportCsvBtn?.addEventListener('click', () => doExport('csv'));
+    exportXlsxBtn?.addEventListener('click', () => doExport('xlsx'));
+
     copyJsonBtn?.addEventListener('click', async () => {
         const text = jsonOutput.textContent?.trim();
         if (!text || copyJsonBtn.disabled) return;
@@ -204,6 +243,7 @@
         statusText.textContent = 'Uploading...';
         convertBtn.disabled = true;
         setCopyEnabled(false);
+        setExportEnabled(false);
 
         const formData = new FormData();
         formData.append('file', currentFile);
@@ -220,6 +260,7 @@
             }
 
             const result = await response.json();
+            lastResultJson = JSON.stringify(result);
             setJsonOutput(JSON.stringify(result, null, 2), true);
             statusText.textContent = 'Conversion successful!';
             showToast('Image converted to JSON successfully.', 'success');
