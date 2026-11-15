@@ -67,7 +67,7 @@ namespace JsonSmith.Services
             return ExtractDataPayload(responseContent);
         }
 
-        public async Task<JsonElement[]> GenerateSamplesAsync(string key, string type, JsonElement seed, int frequency)
+        public async Task<JsonElement[]> GenerateSamplesAsync(string key, string type, JsonElement seed, int frequency, string? schema = null)
         {
             if (string.IsNullOrWhiteSpace(_settings.BASE_URL))
                 throw new InvalidOperationException(
@@ -86,6 +86,8 @@ namespace JsonSmith.Services
                     ? ""
                     : JsonNode.Parse(seed.GetRawText())
             };
+            if (!string.IsNullOrWhiteSpace(schema))
+                payload["schema"] = schema;
 
             using var content = new StringContent(
                 payload.ToJsonString(),

@@ -104,6 +104,22 @@
             <button id="resetJsonBtn" type="button" class="js-btn js-btn-ghost js-btn-sm self-start">
                 Reset to {}
             </button>
+
+            <hr class="js-divider" style="margin:4px 0" />
+
+            <!-- Schema Editor -->
+            <section class="flex flex-col gap-2">
+                <span class="js-label">Target Schema <span class="text-xs font-normal" style="color:var(--txt-3)">(optional)</span></span>
+                <p class="text-xs" style="color:var(--txt-3)">
+                    Provide a JSON Schema to guide AI sample generation (sent with each Generate Samples request).
+                </p>
+                <textarea id="schemaEditor"
+                          rows="5"
+                          placeholder='{ "type": "object", "properties": { "name": { "type": "string", "maxLength": 50 } } }'
+                          class="js-input text-xs"
+                          style="resize:vertical;font-family:var(--ff-mono);line-height:1.4"></textarea>
+                <p id="schemaEditorError" class="hidden text-xs" style="color:var(--err)"></p>
+            </section>
         </div>
 
         <!-- JSON preview panel -->

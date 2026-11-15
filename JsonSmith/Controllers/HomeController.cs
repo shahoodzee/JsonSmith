@@ -209,7 +209,8 @@ using Microsoft.AspNetCore.Mvc;
                     request.Key.Trim(),
                     type,
                     request.Seed,
-                    request.Frequency);
+                    request.Frequency,
+                    request.Schema);
 
                 return Ok(new { values });
             }
