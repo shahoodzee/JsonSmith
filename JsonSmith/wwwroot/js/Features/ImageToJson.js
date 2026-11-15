@@ -7,6 +7,7 @@
     const jsonOutput = document.getElementById('jsonOutput');
     const copyJsonBtn = document.getElementById('copyJsonBtn');
     const copyJsonBtnLabel = document.getElementById('copyJsonBtnLabel');
+    const callbackUrlInput = document.getElementById('callbackUrlInput');
     const offlineBanner = document.getElementById('aiOfflineBanner');
     const offlineBannerMessage = document.getElementById('aiOfflineBannerMessage');
     const workspace = document.getElementById('imageToJsonWorkspace');
@@ -178,12 +179,19 @@
             return;
         }
 
+        const callbackUrl = callbackUrlInput?.value.trim() || '';
+        if (callbackUrl && !callbackUrl.startsWith('https://')) {
+            showToast('Callback URL must start with https://', 'error');
+            return;
+        }
+
         statusText.textContent = 'Uploading...';
         convertBtn.disabled = true;
         setCopyEnabled(false);
 
         const formData = new FormData();
         formData.append('file', currentFile);
+        if (callbackUrl) formData.append('callbackUrl', callbackUrl);
 
         try {
             const response = await fetch('/Home/UploadImage', {

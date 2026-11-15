@@ -55,6 +55,16 @@
                 </div>
             </div>
 
+            <!-- Webhook callback URL (optional) -->
+            <div>
+                <label class="js-label text-xs" for="callbackUrlInput">Callback URL <span style="color:var(--txt-3)">(optional, HTTPS)</span></label>
+                <input id="callbackUrlInput"
+                       type="url"
+                       placeholder="https://example.com/webhook"
+                       class="js-input w-full text-xs mt-1"
+                       style="font-family:var(--ff-mono)" />
+            </div>
+
             <!-- Actions -->
             <div class="flex items-center gap-3">
                 <button id="convertBtn"
