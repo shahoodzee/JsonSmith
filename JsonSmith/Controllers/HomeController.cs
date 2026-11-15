@@ -56,9 +56,12 @@ using Microsoft.AspNetCore.Mvc;
             {
                 var url = await _supabaseService.UploadFileAsync(file, "Images");
                 var jsonResult = await _aiService.ExtractJsonAsync(url);
-                
+
+                // Save to history (best-effort — don't fail the request if DB write fails)
+                try { await _supabaseService.SaveExtractionAsync(file.FileName, url, jsonResult); } catch { }
+
                 // Try to parse the result as JSON to return a clean object
-                try 
+                try
                 {
                     var parsedJson = System.Text.Json.Nodes.JsonNode.Parse(jsonResult);
                     return Ok(parsedJson);
@@ -79,6 +82,20 @@ using Microsoft.AspNetCore.Mvc;
         {
             ViewData["Title"] = "JSON Builder";
             return View();
+        }
+
+        public async Task<IActionResult> History()
+        {
+            ViewData["Title"] = "History";
+            try
+            {
+                var history = await _supabaseService.GetHistoryAsync();
+                return View(history);
+            }
+            catch
+            {
+                return View(Enumerable.Empty<JsonSmith.Models.ExtractionHistory>());
+            }
         }
 
         [HttpPost]
