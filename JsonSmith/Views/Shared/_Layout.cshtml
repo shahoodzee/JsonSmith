@@ -2,77 +2,90 @@
 <html lang="en" class="h-full">
 <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - JsonSmith</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
+
+    <!-- tailwind.config MUST come before the CDN script -->
+    <script>
+        tailwind = { config: {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['Sora', 'system-ui', 'sans-serif'],
+                        body:    ['Inter', 'system-ui', 'sans-serif'],
+                        mono:    ['"JetBrains Mono"', '"Fira Code"', 'monospace'],
+                    }
+                }
+            }
+        }};
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- Restore theme + sidebar before first paint -->
     <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
-
-        // Restore theme on load
-        if (localStorage.theme === 'dark') {
-            document.documentElement.classList.add('dark');
-        }
-
-        // Restore sidebar state on load (prevent flash)
-        if (localStorage.sidebarCollapsed === 'true') {
-            document.documentElement.classList.add('sidebar-collapsed');
-        }
+        (function () {
+            try {
+                var saved = localStorage.getItem('theme');
+                if (saved === 'light') {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+                if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                    document.documentElement.classList.add('sidebar-collapsed');
+                }
+            } catch (e) {}
+        })();
     </script>
-
-    <style>
-        .sidebar-collapsed #sidebar {
-            width: 4rem;
-        }
-        .sidebar-collapsed .sidebar-label {
-            display: none;
-        }
-        .sidebar-collapsed #sidebar nav a {
-            justify-content: center;
-            padding-left: 0;
-            padding-right: 0;
-        }
-        .sidebar-collapsed #sidebar-collapse-icon {
-            display: none;
-        }
-        .sidebar-collapsed #sidebar-expand-icon {
-            display: block;
-        }
-        .sidebar-collapsed #sidebar > div:first-child {
-            justify-content: center;
-        }
-    </style>
 </head>
 
-<body class="h-full bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+<body class="h-full" style="background:var(--bg);color:var(--txt-1);font-family:var(--ff-body)">
 
-    <!-- Navbar -->
-    <header class="h-14 flex items-center justify-between px-6 border-b
-               bg-white dark:bg-slate-800 dark:border-slate-700">
+    <!-- Header -->
+    <header class="h-10 flex items-center justify-between shrink-0 px-5"
+            style="background:var(--surf-1);border-bottom:1px solid var(--border)">
 
-        <span class="text-lg font-semibold text-indigo-600">JsonSmith</span>
+        <div class="flex items-center gap-1" style="font-family:var(--ff-display);font-weight:700;font-size:16px;letter-spacing:-0.02em">
+            <span style="color:var(--accent);font-family:var(--ff-mono);font-size:18px">{</span>
+            <span style="color:var(--txt-1)"> JsonSmith </span>
+            <span style="color:var(--accent);font-family:var(--ff-mono);font-size:18px">}</span>
+        </div>
 
-        <div class="flex items-center gap-4 text-sm">
-            <a asp-action="Privacy" class="hover:underline">Privacy</a>
+        <div class="flex items-center gap-4">
+            <!-- AI status pill -->
+            <div class="flex items-center gap-1.5">
+                <span id="headerAiDot"
+                      class="inline-block w-2 h-2 rounded-full"
+                      style="background:var(--txt-3)"></span>
+                <span id="headerAiText"
+                      style="font-size:11px;color:var(--txt-2)">Checking…</span>
+            </div>
 
-            <!-- Dark mode toggle -->
-            <button onclick="toggleTheme()"
-                    class="px-3 py-1 rounded border
-                       hover:bg-slate-100 dark:hover:bg-slate-700">
-                🌗
+            <!-- Theme toggle -->
+            <button id="themeToggleBtn"
+                    onclick="toggleTheme()"
+                    style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;
+                           border-radius:6px;border:1px solid var(--border-2);
+                           background:var(--surf-2);color:var(--txt-2);
+                           font-size:11px;font-weight:500;cursor:pointer;font-family:var(--ff-body)">
+                <span id="themeIcon">🌙</span>
+                <span id="themeLabel">Dark</span>
             </button>
         </div>
     </header>
 
-    <!-- App Shell -->
-    <div class="flex h-[calc(100vh-3.5rem)]">
+    <!-- App Shell: sidebar + main -->
+    <div class="flex" style="height:calc(100vh - 2.5rem)">
 
         @await Html.PartialAsync("_Sidebar")
 
-        <!-- App Area -->
-        <main class="flex-1 p-6 overflow-auto">
+        <main class="flex-1 overflow-auto p-6 flex flex-col" style="background:var(--bg)">
             @RenderBody()
         </main>
     </div>
@@ -83,20 +96,55 @@
         function toggleSidebar() {
             const root = document.documentElement;
             const collapsed = root.classList.toggle('sidebar-collapsed');
-            try { localStorage.sidebarCollapsed = collapsed; } catch(e) {}
+            try { localStorage.setItem('sidebarCollapsed', collapsed ? 'true' : 'false'); } catch (e) {}
         }
 
         function toggleTheme() {
             const root = document.documentElement;
-            if (root.classList.contains('dark')) {
-                root.classList.remove('dark');
-                localStorage.theme = 'light';
-            } else {
+            const isLight = root.getAttribute('data-theme') === 'light';
+            if (isLight) {
                 root.classList.add('dark');
-                localStorage.theme = 'dark';
+                root.setAttribute('data-theme', 'dark');
+                try { localStorage.setItem('theme', 'dark'); } catch (e) {}
+                document.getElementById('themeIcon').textContent = '🌙';
+                document.getElementById('themeLabel').textContent = 'Dark';
+            } else {
+                root.classList.remove('dark');
+                root.setAttribute('data-theme', 'light');
+                try { localStorage.setItem('theme', 'light'); } catch (e) {}
+                document.getElementById('themeIcon').textContent = '☀️';
+                document.getElementById('themeLabel').textContent = 'Light';
             }
         }
+
+        // Sync theme button label on load
+        (function () {
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            const icon  = document.getElementById('themeIcon');
+            const label = document.getElementById('themeLabel');
+            if (icon)  icon.textContent  = isLight ? '☀️' : '🌙';
+            if (label) label.textContent = isLight ? 'Light' : 'Dark';
+        })();
+
+        // Update header AI indicator from ai-status.js event
+        window.addEventListener('jsonsmith-ai-status', function (e) {
+            const dot  = document.getElementById('headerAiDot');
+            const text = document.getElementById('headerAiText');
+            if (!dot || !text) return;
+            if (e.detail.isOnline) {
+                dot.style.background  = 'var(--ok)';
+                dot.style.boxShadow   = '0 0 5px var(--ok)';
+                text.textContent      = 'AI online';
+                text.style.color      = 'var(--ok)';
+            } else {
+                dot.style.background  = 'var(--err)';
+                dot.style.boxShadow   = '0 0 5px var(--err)';
+                text.textContent      = 'AI offline';
+                text.style.color      = 'var(--err)';
+            }
+        });
     </script>
+
     <script src="~/js/toast.js" asp-append-version="true"></script>
     <script src="~/js/ai-status.js" asp-append-version="true"></script>
     <script src="~/js/Features/ImageToJson.js" asp-append-version="true"></script>

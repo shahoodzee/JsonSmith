@@ -1,138 +1,133 @@
-<div class="max-w-6xl mx-auto space-y-6">
+<div class="flex-1 min-h-0 flex flex-col gap-3">
 
-    <div id="aiOfflineBanner"
-         class="hidden rounded-xl border border-red-500/40 bg-red-50 dark:bg-red-950/40 dark:border-red-500/30 p-4">
-        <div class="flex items-start gap-3">
-            <span class="text-xl shrink-0">⚠️</span>
-            <div>
-                <p class="font-semibold text-red-900 dark:text-red-100">JsonSmithAI is not available</p>
-                <p id="aiOfflineBannerMessage" class="text-sm text-red-800/90 dark:text-red-200/80 mt-1">
-                    Frequency greater than 1 needs JsonSmithAI for unique sample values.
-                </p>
-            </div>
+    <!-- Offline banner -->
+    <div id="aiOfflineBanner" class="hidden js-banner-err shrink-0">
+        <span class="shrink-0 mt-0.5 text-sm" style="color:var(--err)">⚠</span>
+        <div>
+            <p class="text-sm font-semibold" style="color:var(--err);font-family:var(--ff-display)">
+                JsonSmithAI is not available
+            </p>
+            <p id="aiOfflineBannerMessage" class="text-xs mt-0.5" style="color:var(--txt-2)">
+                Frequency greater than 1 needs JsonSmithAI for unique sample values.
+            </p>
         </div>
     </div>
 
-    <div>
-        <h1 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">
+    <!-- Page header -->
+    <div class="shrink-0">
+        <h1 class="text-xl font-semibold" style="font-family:var(--ff-display);color:var(--txt-1)">
             JSON Builder
         </h1>
-        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            Build JSON with objects and columns. Set frequency above 1 to generate unique AI samples.
+        <p class="text-xs mt-0.5" style="color:var(--txt-2)">
+            Build JSON with objects and columns. Frequency above 1 generates unique AI samples.
         </p>
     </div>
 
-    <div id="jsonBuilderWorkspace" class="grid grid-cols-1 md:grid-cols-2 gap-6 transition-opacity duration-300">
+    <!-- Two-column workspace — fills remaining height -->
+    <div id="jsonBuilderWorkspace" class="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity duration-300">
 
-        <div class="order-1 rounded-lg border bg-white dark:bg-slate-800 dark:border-slate-700 p-6 space-y-6">
+        <!-- Controls panel (internally scrollable) -->
+        <div class="js-card overflow-auto flex flex-col gap-4" style="padding:16px">
 
-            <section class="space-y-3">
-                <h2 class="text-sm font-medium">Create Object</h2>
-                <div class="space-y-2">
-                    <label class="block text-xs text-slate-500 dark:text-slate-400" for="objectName">Name</label>
-                    <input id="objectName" type="text" placeholder="user"
-                           class="w-full rounded-md border border-slate-300 dark:border-slate-600
-                                  bg-white dark:bg-slate-900 px-3 py-2 text-sm" />
+            <!-- Create Object -->
+            <section class="flex flex-col gap-2">
+                <span class="js-label">Create Object</span>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs" style="color:var(--txt-3)" for="objectName">Name</label>
+                    <input id="objectName" type="text" placeholder="user" class="js-input" style="height:32px;font-size:12px" />
                 </div>
-                <div class="space-y-2">
-                    <label class="block text-xs text-slate-500 dark:text-slate-400" for="objectTarget">Add inside</label>
-                    <select id="objectTarget"
-                            class="w-full rounded-md border border-slate-300 dark:border-slate-600
-                                   bg-white dark:bg-slate-900 px-3 py-2 text-sm">
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs" style="color:var(--txt-3)" for="objectTarget">Add inside</label>
+                    <select id="objectTarget" class="js-select" style="height:32px;font-size:12px">
                         <option value="">(root)</option>
                     </select>
                 </div>
-                <div class="space-y-2">
-                    <label class="block text-xs text-slate-500 dark:text-slate-400" for="objectFrequency">Frequency</label>
-                    <input id="objectFrequency" type="number" min="1" max="50" value="1"
-                           class="w-full rounded-md border border-slate-300 dark:border-slate-600
-                                  bg-white dark:bg-slate-900 px-3 py-2 text-sm" />
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs" style="color:var(--txt-3)" for="objectFrequency">Frequency</label>
+                    <input id="objectFrequency" type="number" min="1" max="50" value="1" class="js-input" style="height:32px;font-size:12px" />
                 </div>
-                <button id="createObjectBtn" type="button"
-                        class="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 text-sm">
+
+                <button id="createObjectBtn" type="button" class="js-btn js-btn-primary js-btn-sm self-start">
                     Create Object
                 </button>
             </section>
 
-            <hr class="border-slate-200 dark:border-slate-700" />
+            <hr class="js-divider" style="margin:4px 0" />
 
-            <section class="space-y-3">
-                <h2 class="text-sm font-medium">Create Column</h2>
-                <div class="space-y-2">
-                    <label class="block text-xs text-slate-500 dark:text-slate-400" for="columnName">Name</label>
-                    <input id="columnName" type="text" placeholder="name"
-                           class="w-full rounded-md border border-slate-300 dark:border-slate-600
-                                  bg-white dark:bg-slate-900 px-3 py-2 text-sm" />
+            <!-- Create Column -->
+            <section class="flex flex-col gap-2">
+                <span class="js-label">Create Column</span>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs" style="color:var(--txt-3)" for="columnName">Name</label>
+                    <input id="columnName" type="text" placeholder="name" class="js-input" style="height:32px;font-size:12px" />
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="space-y-2">
-                        <label class="block text-xs text-slate-500 dark:text-slate-400" for="columnType">Type</label>
-                        <select id="columnType"
-                                class="w-full rounded-md border border-slate-300 dark:border-slate-600
-                                       bg-white dark:bg-slate-900 px-3 py-2 text-sm">
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs" style="color:var(--txt-3)" for="columnType">Type</label>
+                        <select id="columnType" class="js-select" style="height:32px;font-size:12px">
                             <option value="string">string</option>
                             <option value="int">int</option>
                         </select>
                     </div>
-                    <div class="space-y-2">
-                        <label class="block text-xs text-slate-500 dark:text-slate-400" for="columnFrequency">Frequency</label>
-                        <input id="columnFrequency" type="number" min="1" max="50" value="1"
-                               class="w-full rounded-md border border-slate-300 dark:border-slate-600
-                                      bg-white dark:bg-slate-900 px-3 py-2 text-sm" />
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs" style="color:var(--txt-3)" for="columnFrequency">Frequency</label>
+                        <input id="columnFrequency" type="number" min="1" max="50" value="1" class="js-input" style="height:32px;font-size:12px" />
                     </div>
                 </div>
-                <div class="space-y-2">
-                    <label class="block text-xs text-slate-500 dark:text-slate-400" for="columnValue">Value (seed)</label>
-                    <input id="columnValue" type="text" placeholder="bob"
-                           class="w-full rounded-md border border-slate-300 dark:border-slate-600
-                                  bg-white dark:bg-slate-900 px-3 py-2 text-sm" />
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs" style="color:var(--txt-3)" for="columnValue">Value (seed)</label>
+                    <input id="columnValue" type="text" placeholder="bob" class="js-input" style="height:32px;font-size:12px" />
                 </div>
-                <div class="space-y-2">
-                    <label class="block text-xs text-slate-500 dark:text-slate-400" for="columnTarget">Add inside</label>
-                    <select id="columnTarget"
-                            class="w-full rounded-md border border-slate-300 dark:border-slate-600
-                                   bg-white dark:bg-slate-900 px-3 py-2 text-sm">
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-xs" style="color:var(--txt-3)" for="columnTarget">Add inside</label>
+                    <select id="columnTarget" class="js-select" style="height:32px;font-size:12px">
                         <option value="">(root)</option>
                     </select>
                 </div>
-                <button id="createColumnBtn" type="button"
-                        class="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 text-sm
-                               disabled:opacity-60 disabled:cursor-not-allowed">
+
+                <button id="createColumnBtn" type="button" class="js-btn js-btn-primary js-btn-sm self-start">
                     Create Column
                 </button>
-                <p id="columnStatus" class="text-xs text-slate-500 dark:text-slate-400"></p>
+
+                <p id="columnStatus" class="text-xs" style="color:var(--txt-2)"></p>
             </section>
 
-            <hr class="border-slate-200 dark:border-slate-700" />
+            <hr class="js-divider" style="margin:4px 0" />
 
-            <button id="resetJsonBtn" type="button"
-                    class="text-sm px-3 py-1.5 rounded-md border border-slate-300 dark:border-slate-600
-                           hover:bg-slate-100 dark:hover:bg-slate-700">
+            <button id="resetJsonBtn" type="button" class="js-btn js-btn-ghost js-btn-sm self-start">
                 Reset to {}
             </button>
         </div>
 
-        <div class="order-2 rounded-lg border bg-white dark:bg-slate-800 dark:border-slate-700 p-6 flex flex-col min-h-[420px]">
-            <div class="flex items-center justify-between mb-2">
-                <h2 class="text-sm font-medium">JSON Preview</h2>
+        <!-- JSON preview panel -->
+        <div class="js-card flex flex-col min-h-0" style="padding:16px">
+
+            <div class="flex items-center justify-between shrink-0 mb-2">
+                <span class="js-label" style="margin-bottom:0">JSON Preview</span>
                 <button id="copyJsonBtn"
                         type="button"
                         title="Copy JSON to clipboard"
-                        class="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border
-                               border-slate-300 dark:border-slate-600
-                               hover:bg-slate-100 dark:hover:bg-slate-700
-                               disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent
-                               transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        class="js-btn js-btn-ghost js-btn-sm flex items-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
                     <span id="copyJsonBtnLabel">Copy</span>
                 </button>
             </div>
+
             <pre id="jsonOutput"
-                 class="flex-1 rounded bg-slate-100 dark:bg-slate-900
-                        p-4 text-sm text-slate-700 dark:text-slate-300
-                        overflow-auto font-mono leading-relaxed">{}</pre>
+                 class="flex-1 min-h-0 overflow-auto rounded-lg text-xs leading-relaxed p-3"
+                 style="background:var(--bg);border:1px solid var(--border);font-family:var(--ff-mono);color:var(--txt-2)">{}</pre>
         </div>
+
     </div>
 </div>

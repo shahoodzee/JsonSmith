@@ -2,91 +2,96 @@
     ViewData["Title"] = "Home";
 }
 
-<div class="max-w-5xl mx-auto space-y-8">
+<div class="max-w-3xl mx-auto space-y-7">
 
     <!-- Hero -->
-    <div class="text-center space-y-3 pt-4">
-        <div class="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-indigo-100 dark:bg-indigo-900/40 text-3xl mb-2">
-            ⚡
-        </div>
-        <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">
-            Welcome to JsonSmith
+    <div class="pt-2">
+        <h1 class="text-2xl font-semibold"
+            style="font-family:var(--ff-display);color:var(--txt-1);letter-spacing:-0.02em">
+            Welcome to
+            <span style="color:var(--accent-h);font-family:var(--ff-mono)">{</span>
+            JsonSmith
+            <span style="color:var(--accent-h);font-family:var(--ff-mono)">}</span>
         </h1>
-        <p class="text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
-            Transform images into structured JSON using Supabase Storage and the JsonSmithAI extraction service.
+        <p class="mt-2 text-sm" style="color:var(--txt-2)">
+            Transform images into structured JSON. Build JSON schemas with AI-generated sample values.
         </p>
     </div>
 
-    <!-- AI status cards (updated by ai-status.js) -->
-    <div id="homeAiOnlineCard" class="hidden rounded-xl border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-500/20 p-5">
-        <div class="flex items-center gap-3">
-            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-xl">✓</span>
-            <div>
-                <p class="font-semibold text-emerald-900 dark:text-emerald-100">JsonSmithAI is online</p>
-                <p class="text-sm text-emerald-800/80 dark:text-emerald-200/70">All features are ready to use.</p>
-            </div>
+    <!-- AI status banners (toggled by ai-status.js) -->
+    <div id="homeAiOnlineCard"
+         class="hidden js-banner-ok">
+        <span class="shrink-0 mt-0.5" style="color:var(--ok);font-size:16px">●</span>
+        <div>
+            <p class="text-sm font-semibold" style="color:var(--ok);font-family:var(--ff-display)">
+                JsonSmithAI is online
+            </p>
+            <p class="text-xs mt-0.5" style="color:var(--txt-2)">All AI-powered features are available.</p>
         </div>
     </div>
 
-    <div id="homeAiOfflineCard" class="rounded-xl border border-red-500/30 bg-red-50 dark:bg-red-950/30 dark:border-red-500/20 p-5">
-        <div class="flex items-center gap-3">
-            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20 text-xl">✕</span>
-            <div>
-                <p class="font-semibold text-red-900 dark:text-red-100">JsonSmithAI is offline</p>
-                <p class="text-sm text-red-800/80 dark:text-red-200/70">
-                    Start the FastAPI service, then click the 🤖 orb in the bottom-right to recheck.
-                </p>
-            </div>
+    <div id="homeAiOfflineCard"
+         class="js-banner-err">
+        <span class="shrink-0 mt-0.5" style="color:var(--err);font-size:16px">●</span>
+        <div>
+            <p class="text-sm font-semibold" style="color:var(--err);font-family:var(--ff-display)">
+                JsonSmithAI is offline
+            </p>
+            <p class="text-xs mt-0.5" style="color:var(--txt-2)">
+                Start the FastAPI service, then click the 🤖 orb in the bottom-right to recheck.
+            </p>
         </div>
     </div>
 
     <!-- Feature cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
         <a id="homeImageToJsonLink"
            asp-controller="Home" asp-action="ImageToJSON"
-           class="group rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 p-6
-                  hover:border-indigo-500 hover:shadow-md transition-all">
+           class="js-card js-card-hover block"
+           style="text-decoration:none">
             <div class="flex items-start gap-4">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-2xl">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl"
+                     style="background:var(--accent-bg);border:1px solid var(--accent-b)">
                     🖼️
                 </div>
                 <div>
-                    <h2 class="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                    <p class="text-sm font-semibold" style="font-family:var(--ff-display);color:var(--txt-1)">
                         Image to JSON
-                    </h2>
-                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                        Upload an image and extract structured JSON via JsonSmithAI.
                     </p>
-                    <span class="inline-block mt-3 text-xs font-medium text-indigo-600 dark:text-indigo-400">
-                        Open feature →
-                    </span>
+                    <p class="text-xs mt-1" style="color:var(--txt-2)">
+                        Upload an image and extract structured JSON via OCR + AI.
+                    </p>
+                    <span class="inline-block mt-3 text-xs font-medium"
+                          style="color:var(--accent-h)">Open →</span>
                 </div>
             </div>
         </a>
 
         <a asp-controller="Home" asp-action="JsonBuilder"
-           class="group rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 p-6
-                  hover:border-indigo-500 hover:shadow-md transition-all">
+           class="js-card js-card-hover block"
+           style="text-decoration:none">
             <div class="flex items-start gap-4">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-2xl">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl"
+                     style="background:var(--surf-2);border:1px solid var(--border)">
                     🧱
                 </div>
                 <div>
-                    <h2 class="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                    <p class="text-sm font-semibold" style="font-family:var(--ff-display);color:var(--txt-1)">
                         JSON Builder
-                    </h2>
-                    <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                        Build JSON with objects, columns, and AI-powered unique samples.
                     </p>
-                    <span class="inline-block mt-3 text-xs font-medium text-indigo-600 dark:text-indigo-400">
-                        Open feature →
-                    </span>
+                    <p class="text-xs mt-1" style="color:var(--txt-2)">
+                        Build JSON objects and columns with AI-powered unique sample values.
+                    </p>
+                    <span class="inline-block mt-3 text-xs font-medium"
+                          style="color:var(--accent-h)">Open →</span>
                 </div>
             </div>
         </a>
+
     </div>
 
-    <p class="text-center text-xs text-slate-500 dark:text-slate-500">
-        Tip: the floating 🤖 in the bottom-right shows live JsonSmithAI status.
+    <p class="text-xs" style="color:var(--txt-3)">
+        Tip: the 🤖 orb in the bottom-right shows live JsonSmithAI status.
     </p>
 </div>
