@@ -77,6 +77,13 @@
             <div class="flex items-center justify-between">
                 <span class="js-label" style="margin-bottom:0">Generated JSON</span>
                 <div class="flex items-center gap-1.5">
+                    <button id="prettyToggleBtn"
+                            type="button"
+                            title="Toggle pretty/raw view"
+                            class="js-btn js-btn-ghost js-btn-sm hidden"
+                            style="font-size:10px">
+                        <span id="prettyToggleBtnLabel">Raw</span>
+                    </button>
                     <button id="exportCsvBtn"
                             type="button"
                             disabled

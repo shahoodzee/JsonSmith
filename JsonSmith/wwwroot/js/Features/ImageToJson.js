@@ -7,6 +7,8 @@
     const jsonOutput = document.getElementById('jsonOutput');
     const copyJsonBtn = document.getElementById('copyJsonBtn');
     const copyJsonBtnLabel = document.getElementById('copyJsonBtnLabel');
+    const prettyToggleBtn = document.getElementById('prettyToggleBtn');
+    const prettyToggleBtnLabel = document.getElementById('prettyToggleBtnLabel');
     const downloadJsonBtn = document.getElementById('downloadJsonBtn');
     const exportCsvBtn = document.getElementById('exportCsvBtn');
     const exportXlsxBtn = document.getElementById('exportXlsxBtn');
@@ -19,6 +21,8 @@
     let currentFile = null;
     let aiOnline = false;
     let lastCopyTimeout = null;
+    let isPretty = true;
+    let lastResultObj = null;
     let currentFileName = '';
     let lastResultJson = null;
 
@@ -33,6 +37,25 @@
     function setExportEnabled(enabled) {
         if (exportCsvBtn) exportCsvBtn.disabled = !enabled;
         if (exportXlsxBtn) exportXlsxBtn.disabled = !enabled;
+    }
+
+    function renderOutput() {
+        if (!lastResultObj) return;
+
+        const isMalformed = lastResultObj.note === 'Result may be malformed JSON';
+        const text = isPretty
+            ? JSON.stringify(lastResultObj, null, 2)
+            : JSON.stringify(lastResultObj);
+
+        jsonOutput.textContent = text;
+
+        if (isMalformed) {
+            jsonOutput.style.borderColor = 'var(--err)';
+            jsonOutput.style.color = 'var(--err)';
+        } else {
+            jsonOutput.style.borderColor = '';
+            jsonOutput.style.color = 'var(--txt-2)';
+        }
     }
 
     function setJsonOutput(text, allowCopy) {
@@ -98,6 +121,8 @@
             statusText.textContent = 'AI service unavailable';
             setJsonOutput(OFFLINE_JSON, false);
             currentFile = null;
+            lastResultObj = null;
+            prettyToggleBtn?.classList.add('hidden');
             fileInput.value = '';
             previewImage.classList.add('hidden');
             previewImage.removeAttribute('src');
@@ -210,6 +235,12 @@
         }
     });
 
+    prettyToggleBtn?.addEventListener('click', () => {
+        isPretty = !isPretty;
+        if (prettyToggleBtnLabel) prettyToggleBtnLabel.textContent = isPretty ? 'Raw' : 'Pretty';
+        renderOutput();
+    });
+
     downloadJsonBtn?.addEventListener('click', () => {
         const text = jsonOutput.textContent?.trim();
         if (!text || downloadJsonBtn.disabled) return;
@@ -260,14 +291,22 @@
             }
 
             const result = await response.json();
+            lastResultObj = result;
             lastResultJson = JSON.stringify(result);
-            setJsonOutput(JSON.stringify(result, null, 2), true);
+            isPretty = true;
+            if (prettyToggleBtnLabel) prettyToggleBtnLabel.textContent = 'Raw';
+            prettyToggleBtn?.classList.remove('hidden');
+            renderOutput();
+            setCopyEnabled(true);
+            setExportEnabled(true);
             statusText.textContent = 'Conversion successful!';
             showToast('Image converted to JSON successfully.', 'success');
         } catch (error) {
             console.error(error);
             const message = error.message || 'Error during upload.';
             statusText.textContent = 'Error during conversion.';
+            lastResultObj = null;
+            prettyToggleBtn?.classList.add('hidden');
             setJsonOutput(JSON.stringify({ error: message }, null, 2), true);
             showToast(message, 'error', 6000);
         } finally {
