@@ -7,6 +7,7 @@
     const jsonOutput = document.getElementById('jsonOutput');
     const copyJsonBtn = document.getElementById('copyJsonBtn');
     const copyJsonBtnLabel = document.getElementById('copyJsonBtnLabel');
+    const downloadJsonBtn = document.getElementById('downloadJsonBtn');
     const offlineBanner = document.getElementById('aiOfflineBanner');
     const offlineBannerMessage = document.getElementById('aiOfflineBannerMessage');
     const workspace = document.getElementById('imageToJsonWorkspace');
@@ -16,12 +17,14 @@
     let currentFile = null;
     let aiOnline = false;
     let lastCopyTimeout = null;
+    let currentFileName = '';
 
     const IDLE_JSON = '{\n  "status": "idle",\n  "message": "Upload an image to start"\n}';
     const OFFLINE_JSON = '{\n  "status": "unavailable",\n  "message": "JsonSmithAI is offline. Start the FastAPI service and try again."\n}';
 
     function setCopyEnabled(enabled) {
         if (copyJsonBtn) copyJsonBtn.disabled = !enabled;
+        if (downloadJsonBtn) downloadJsonBtn.disabled = !enabled;
     }
 
     function setJsonOutput(text, allowCopy) {
@@ -114,6 +117,7 @@
         if (!file || !aiOnline) return;
 
         currentFile = file;
+        currentFileName = file.name;
         const reader = new FileReader();
         reader.onload = (event) => {
             previewImage.src = event.target.result;
@@ -165,6 +169,25 @@
         } catch {
             showToast('Could not copy to clipboard.', 'error');
         }
+    });
+
+    downloadJsonBtn?.addEventListener('click', () => {
+        const text = jsonOutput.textContent?.trim();
+        if (!text || downloadJsonBtn.disabled) return;
+
+        const baseName = currentFileName
+            ? currentFileName.replace(/\.[^.]+$/, '')
+            : 'export';
+        const blob = new Blob([text], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${baseName}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('JSON downloaded.', 'success');
     });
 
     convertBtn.addEventListener('click', async () => {
