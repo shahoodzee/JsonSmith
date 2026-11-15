@@ -1,7 +1,7 @@
-using Microsoft.Extensions.Options;
-using JsonSmith.Models;
 using Supabase;
-using Supabase.Postgrest.Constants;
+using JsonSmith.Models;
+using Microsoft.Extensions.Options;
+using static Supabase.Postgrest.Constants;
 
 namespace JsonSmith.Services
 {
