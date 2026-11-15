@@ -1,0 +1,108 @@
+@model IEnumerable<JsonSmith.Models.ExtractionHistory>
+
+<div class="max-w-6xl mx-auto space-y-5">
+
+    <!-- Page header -->
+    <div>
+        <h1 class="text-xl font-semibold" style="font-family:var(--ff-display);color:var(--txt-1)">
+            Extraction History
+        </h1>
+        <p class="text-xs mt-1" style="color:var(--txt-2)">
+            Past Image to JSON extractions. Click View to restore the JSON output.
+        </p>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="js-card flex flex-col items-center justify-center py-12 gap-3">
+            <span style="font-size:36px;opacity:.3">🗂️</span>
+            <p class="text-sm" style="color:var(--txt-2)">No extractions yet.</p>
+            <a asp-controller="Home" asp-action="ImageToJSON" class="js-btn js-btn-primary js-btn-sm">
+                Go to Image to JSON
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            <!-- History table -->
+            <div class="js-card overflow-auto">
+                <table class="w-full text-xs" style="border-collapse:collapse">
+                    <thead>
+                        <tr style="border-bottom:1px solid var(--border)">
+                            <th class="text-left py-2 px-3" style="color:var(--txt-3);font-weight:500">File</th>
+                            <th class="text-left py-2 px-3" style="color:var(--txt-3);font-weight:500">Date</th>
+                            <th class="py-2 px-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        @foreach (var item in Model)
+                        {
+                            <tr class="history-row"
+                                style="border-bottom:1px solid var(--border)"
+                                data-json="@System.Text.Json.JsonSerializer.Serialize(item.ExtractedJson)">
+                                <td class="py-2 px-3 truncate max-w-[180px]" style="color:var(--txt-1)"
+                                    title="@item.ImageFilename">
+                                    @item.ImageFilename
+                                </td>
+                                <td class="py-2 px-3 whitespace-nowrap" style="color:var(--txt-2)">
+                                    @item.CreatedAt.ToLocalTime().ToString("MMM d, HH:mm")
+                                </td>
+                                <td class="py-2 px-3">
+                                    <button type="button"
+                                            class="view-json-btn js-btn js-btn-ghost js-btn-sm">
+                                        View
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- JSON viewer panel -->
+            <div class="js-card flex flex-col min-h-[300px] gap-3">
+                <span class="js-label" style="margin-bottom:0">JSON Output</span>
+                <p id="jsonViewerHint" class="text-xs" style="color:var(--txt-3)">
+                    Select a row to view its JSON.
+                </p>
+                <pre id="jsonViewer"
+                     class="hidden flex-1 rounded-lg overflow-auto text-xs leading-relaxed p-4"
+                     style="background:var(--bg);border:1px solid var(--border);font-family:var(--ff-mono);color:var(--txt-2)"></pre>
+            </div>
+
+        </div>
+    }
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const viewer = document.getElementById('jsonViewer');
+        const hint = document.getElementById('jsonViewerHint');
+        let activeRow = null;
+
+        document.querySelectorAll('.view-json-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const row = btn.closest('.history-row');
+                const rawJson = row?.dataset.json;
+                if (!rawJson) return;
+
+                try {
+                    const parsed = JSON.parse(JSON.parse(rawJson));
+                    viewer.textContent = JSON.stringify(parsed, null, 2);
+                } catch {
+                    viewer.textContent = JSON.parse(rawJson);
+                }
+
+                if (activeRow) activeRow.style.background = '';
+                activeRow = row;
+                row.style.background = 'var(--accent-bg)';
+
+                viewer.classList.remove('hidden');
+                hint?.classList.add('hidden');
+            });
+        });
+    });
+</script>
