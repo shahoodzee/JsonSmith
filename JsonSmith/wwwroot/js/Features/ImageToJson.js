@@ -13,9 +13,17 @@
 
     if (!dropZone) return;
 
+    const singleOutputPanel = document.getElementById('singleOutputPanel');
+    const batchOutputPanel = document.getElementById('batchOutputPanel');
+    const batchResultsList = document.getElementById('batchResultsList');
+    const batchJsonViewer = document.getElementById('batchJsonViewer');
+    const mergeAllBtn = document.getElementById('mergeAllBtn');
+
     let currentFile = null;
+    let currentFiles = [];
     let aiOnline = false;
     let lastCopyTimeout = null;
+    let batchResults = [];
 
     const IDLE_JSON = '{\n  "status": "idle",\n  "message": "Upload an image to start"\n}';
     const OFFLINE_JSON = '{\n  "status": "unavailable",\n  "message": "JsonSmithAI is offline. Start the FastAPI service and try again."\n}';
@@ -59,9 +67,12 @@
             statusText.textContent = 'AI service unavailable';
             setJsonOutput(OFFLINE_JSON, false);
             currentFile = null;
+            currentFiles = [];
             fileInput.value = '';
             previewImage.classList.add('hidden');
             previewImage.removeAttribute('src');
+            singleOutputPanel?.classList.remove('hidden');
+            batchOutputPanel?.classList.add('hidden');
         }
     }
 
@@ -87,7 +98,7 @@
 
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length) {
-            handleFile(e.target.files[0]);
+            handleFiles(e.target.files);
         }
     });
 
@@ -106,21 +117,33 @@
         e.preventDefault();
         dropZone.classList.remove('border-indigo-500');
         if (e.dataTransfer.files.length) {
-            handleFile(e.dataTransfer.files[0]);
+            handleFiles(e.dataTransfer.files);
         }
     });
 
     function handleFile(file) {
         if (!file || !aiOnline) return;
+        handleFiles([file]);
+    }
 
-        currentFile = file;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            previewImage.src = event.target.result;
-            previewImage.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-        statusText.textContent = `Selected: ${file.name}`;
+    function handleFiles(files) {
+        if (!files || !files.length || !aiOnline) return;
+
+        currentFiles = Array.from(files);
+        currentFile = currentFiles[0];
+
+        if (currentFiles.length === 1) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                previewImage.src = event.target.result;
+                previewImage.classList.remove('hidden');
+            };
+            reader.readAsDataURL(currentFiles[0]);
+            statusText.textContent = `Selected: ${currentFiles[0].name}`;
+        } else {
+            previewImage.classList.add('hidden');
+            statusText.textContent = `${currentFiles.length} files selected`;
+        }
         convertBtn.disabled = false;
     }
 
@@ -167,47 +190,136 @@
         }
     });
 
+    function showSinglePanel() {
+        singleOutputPanel?.classList.remove('hidden');
+        batchOutputPanel?.classList.add('hidden');
+    }
+
+    function showBatchPanel() {
+        singleOutputPanel?.classList.add('hidden');
+        batchOutputPanel?.classList.remove('hidden');
+    }
+
+    function renderBatchRow(result, index) {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between p-2 rounded';
+        row.style.cssText = 'background:var(--bg-2,var(--bg));border:1px solid var(--border)';
+        row.innerHTML = `
+            <span class="text-xs truncate flex-1" style="color:var(--txt-1);max-width:60%" title="${result.fileName}">${result.fileName}</span>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs" style="color:${result.success ? 'var(--ok,#22c55e)' : 'var(--err)'}">${result.success ? 'OK' : 'Error'}</span>
+                ${result.success ? `<button type="button" class="js-btn js-btn-ghost js-btn-sm view-batch-btn" data-index="${index}">View</button>` : ''}
+            </div>`;
+        return row;
+    }
+
+    mergeAllBtn?.addEventListener('click', () => {
+        const successData = batchResults.filter(r => r.success).map(r => r.data);
+        if (!successData.length) return;
+        batchJsonViewer.textContent = JSON.stringify(successData, null, 2);
+        batchJsonViewer.classList.remove('hidden');
+    });
+
     convertBtn.addEventListener('click', async () => {
         if (!aiOnline) {
             showToast('JsonSmithAI is offline. Image to JSON is unavailable.', 'error', 6000);
             return;
         }
 
-        if (!currentFile) {
+        if (!currentFiles.length) {
             showToast('Please select an image first.', 'warning');
             return;
         }
 
-        statusText.textContent = 'Uploading...';
         convertBtn.disabled = true;
         setCopyEnabled(false);
 
-        const formData = new FormData();
-        formData.append('file', currentFile);
+        if (currentFiles.length === 1) {
+            // Single-file path (unchanged)
+            showSinglePanel();
+            statusText.textContent = 'Uploading...';
 
-        try {
-            const response = await fetch('/Home/UploadImage', {
-                method: 'POST',
-                body: formData
-            });
+            const formData = new FormData();
+            formData.append('file', currentFiles[0]);
 
-            if (!response.ok) {
-                const serverMessage = await readErrorMessage(response);
-                throw new Error(serverMessage ?? `Upload failed (${response.status})`);
+            try {
+                const response = await fetch('/Home/UploadImage', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const serverMessage = await readErrorMessage(response);
+                    throw new Error(serverMessage ?? `Upload failed (${response.status})`);
+                }
+
+                const result = await response.json();
+                setJsonOutput(JSON.stringify(result, null, 2), true);
+                statusText.textContent = 'Conversion successful!';
+                showToast('Image converted to JSON successfully.', 'success');
+            } catch (error) {
+                console.error(error);
+                const message = error.message || 'Error during upload.';
+                statusText.textContent = 'Error during conversion.';
+                setJsonOutput(JSON.stringify({ error: message }, null, 2), true);
+                showToast(message, 'error', 6000);
+            } finally {
+                convertBtn.disabled = !aiOnline || !currentFiles.length;
             }
+        } else {
+            // Batch path
+            showBatchPanel();
+            batchResults = [];
+            batchResultsList.innerHTML = '';
+            batchJsonViewer.classList.add('hidden');
+            mergeAllBtn?.classList.add('hidden');
+            statusText.textContent = `Processing ${currentFiles.length} files…`;
 
-            const result = await response.json();
-            setJsonOutput(JSON.stringify(result, null, 2), true);
-            statusText.textContent = 'Conversion successful!';
-            showToast('Image converted to JSON successfully.', 'success');
-        } catch (error) {
-            console.error(error);
-            const message = error.message || 'Error during upload.';
-            statusText.textContent = 'Error during conversion.';
-            setJsonOutput(JSON.stringify({ error: message }, null, 2), true);
-            showToast(message, 'error', 6000);
-        } finally {
-            convertBtn.disabled = !aiOnline || !currentFile;
+            const formData = new FormData();
+            currentFiles.forEach(f => formData.append('files', f));
+
+            try {
+                const response = await fetch('/Home/UploadImages', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const serverMessage = await readErrorMessage(response);
+                    throw new Error(serverMessage ?? `Batch upload failed (${response.status})`);
+                }
+
+                batchResults = await response.json();
+                batchResultsList.innerHTML = '';
+                batchResults.forEach((result, i) => {
+                    const row = renderBatchRow(result, i);
+                    batchResultsList.appendChild(row);
+                });
+
+                // Wire up view buttons
+                batchResultsList.querySelectorAll('.view-batch-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const idx = Number(btn.dataset.index);
+                        const r = batchResults[idx];
+                        if (r?.data) {
+                            batchJsonViewer.textContent = JSON.stringify(r.data, null, 2);
+                            batchJsonViewer.classList.remove('hidden');
+                        }
+                    });
+                });
+
+                const successCount = batchResults.filter(r => r.success).length;
+                statusText.textContent = `${successCount}/${batchResults.length} converted`;
+                if (successCount > 1) mergeAllBtn?.classList.remove('hidden');
+                showToast(`Batch complete: ${successCount}/${batchResults.length} succeeded.`,
+                    successCount === batchResults.length ? 'success' : 'warning');
+            } catch (error) {
+                console.error(error);
+                statusText.textContent = 'Batch error.';
+                showToast(error.message || 'Batch upload failed.', 'error', 6000);
+            } finally {
+                convertBtn.disabled = !aiOnline || !currentFiles.length;
+            }
         }
     });
 });
